@@ -24,6 +24,9 @@ python run_backtest.py --strategy momentum --tickers SPY QQQ IWM EFA EEM TLT GLD
 - `src/strategies.py` — 策略：输入价格，输出每日目标权重
 - `src/backtest.py` — 向量化回测引擎
 - `src/metrics.py` — 绩效指标
+- `src/factors.py` — 横截面因子（价格类）：多窗口动量、低波动、距 52 周高点
+- `factor_rank.py` — 给股票池逐只打分排名
+- `scan_params.py` — 参数敏感性扫描（含样本内/样本外对比）
 - `run_backtest.py` — 命令行入口
 
 ## 回测的三条诚实性约定
@@ -43,5 +46,7 @@ python run_backtest.py --strategy momentum --tickers SPY QQQ IWM EFA EEM TLT GLD
 
 - [x] 参数敏感性扫描（看策略对参数是否稳健）—— scan_params.py，含样本内/样本外对比
 - [ ] 样本外验证（前半段调参、后半段只验证）
-- [ ] 接入选股因子（价值/质量/动量打分）
+- [x] 因子打分 v1（价格类：动量/低波动/52 周高点）
+- [ ] 接入财报数据，补价值（PE/PB/FCF 收益率）与质量（ROE/利润率/杠杆）因子
+- [ ] 因子策略回测（按月调仓持有 Top N，对比基准）
 - [ ] 模拟盘（paper trading）记录
