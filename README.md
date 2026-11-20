@@ -41,7 +41,7 @@ python run_backtest.py --strategy momentum --tickers SPY QQQ IWM EFA EEM TLT GLD
 
 ## 路线图
 
-- [ ] 参数敏感性扫描（看策略对参数是否稳健）
+- [x] 参数敏感性扫描（看策略对参数是否稳健）—— scan_params.py，含样本内/样本外对比
 - [ ] 样本外验证（前半段调参、后半段只验证）
 - [ ] 接入选股因子（价值/质量/动量打分）
 - [ ] 模拟盘（paper trading）记录
