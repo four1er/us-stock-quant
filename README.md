@@ -1,7 +1,8 @@
 # us-stock-quant
 
 美股量化研究工具（学习项目）：把交易想法写成规则，用历史数据回测验证，
-并和买入持有基准对比。只做研究与回测，不做实盘下单；投资决策由使用者本人作出。
+并和买入持有基准对比。回测之外只接 IBKR 模拟盘（代码层面硬锁，无法连实盘，
+见下方「模拟盘」）；投资决策由使用者本人作出。
 
 ## 快速开始
 
@@ -28,6 +29,8 @@ python run_backtest.py --strategy momentum --tickers SPY QQQ IWM EFA EEM TLT GLD
 - `factor_rank.py` — 给股票池逐只打分排名
 - `scan_params.py` — 参数敏感性扫描（含样本内/样本外对比）
 - `run_backtest.py` — 命令行入口
+- `src/paper_ibkr.py` — IBKR 模拟盘执行层（端口锁 + DU 账户锁 + 整股数量）
+- `run_paper.py` — 模拟盘入口（默认 dry-run，只算信号不下单）
 
 ## 回测的三条诚实性约定
 
@@ -49,4 +52,38 @@ python run_backtest.py --strategy momentum --tickers SPY QQQ IWM EFA EEM TLT GLD
 - [x] 因子打分 v1（价格类：动量/低波动/52 周高点）
 - [ ] 接入财报数据，补价值（PE/PB/FCF 收益率）与质量（ROE/利润率/杠杆）因子
 - [ ] 因子策略回测（按月调仓持有 Top N，对比基准）
-- [ ] 模拟盘（paper trading）记录
+- [x] 模拟盘执行层 v1（IBKR paper，dry-run + 安全锁）—— run_paper.py
+- [ ] 模拟盘连续记录（每日信号 vs 成交对比，跑满数周再评估）
+
+## 模拟盘（IBKR Paper Trading）
+
+前置设置（只需一次，都在你本地电脑上）：
+
+1. IBKR 官网 Client Portal → 设置 → Paper Trading Account，确认模拟账户已开通，
+   记下模拟账户号（以 `DU` 开头）和模拟盘专用密码。模拟账户默认 $1,000,000 虚拟资金，
+   本工具用 `--budget` 虚拟资金池做仓位计算，不动用账户全额。
+2. 安装 IB Gateway（比 TWS 轻），登录时选 **Paper**，用模拟盘账号登录；
+   在 Configure → API → Settings 勾选 Enable ActiveX and Socket Clients，
+   端口保持模拟盘默认：Gateway 4002 / TWS 7497。
+3. `pip install ib_async`（已在 requirements.txt 中）。
+
+运行：
+
+```bash
+# dry-run：只算信号、打印计划订单、写 results/paper_log.csv，不连接不下单
+python run_paper.py --ticker SPY --budget 10000
+
+# 真正在模拟盘下单（Gateway 需已登录模拟盘）
+python run_paper.py --ticker SPY --budget 10000 --port 4002 --execute
+```
+
+安全锁（src/paper_ibkr.py）：
+
+- 只接受模拟盘端口 7497 / 4002，实盘端口 7496 / 4001 直接报错退出；
+- 连接后校验所有托管账户都以 `DU` 开头，否则断开且不下单；
+- 默认 dry-run，必须显式加 `--execute` 才下单。
+
+注意：IBKR 的 API 不支持碎股（碎股只能在客户端手动下单），所以数量按整股计算：
+`qty = floor(budget / price)`。预算小于 1 股价格时目标为 0 股 — 用 `--budget 100`
+跑一次 dry-run 就能直观看到这个约束。模拟盘成交是按盘口模拟的，比实盘乐观，
+只能验证执行链路，不能证明策略赚钱。
