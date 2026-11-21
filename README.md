@@ -27,6 +27,7 @@ python run_backtest.py --strategy momentum --tickers SPY QQQ IWM EFA EEM TLT GLD
 - `src/metrics.py` — 绩效指标
 - `src/factors.py` — 横截面因子（价格类）：多窗口动量、低波动、距 52 周高点
 - `factor_rank.py` — 给股票池逐只打分排名
+- `factor_backtest.py` — 因子策略回测：月度调仓持有 Top N，对比 SPY 与等权池
 - `scan_params.py` — 参数敏感性扫描（含样本内/样本外对比）
 - `run_backtest.py` — 命令行入口
 - `src/paper_ibkr.py` — IBKR 模拟盘执行层（端口锁 + DU 账户锁 + 整股数量）
@@ -51,7 +52,7 @@ python run_backtest.py --strategy momentum --tickers SPY QQQ IWM EFA EEM TLT GLD
 - [ ] 样本外验证（前半段调参、后半段只验证）
 - [x] 因子打分 v1（价格类：动量/低波动/52 周高点）
 - [ ] 接入财报数据，补价值（PE/PB/FCF 收益率）与质量（ROE/利润率/杠杆）因子
-- [ ] 因子策略回测（按月调仓持有 Top N，对比基准）
+- [x] 因子策略回测（按月调仓持有 Top N，对比基准）—— factor_backtest.py；Top 5（2017-11-30–2026-11-19，成本 5 bps）：总收益 +472.9%、夏普 0.95，跑赢 SPY（+170.1%、0.68）但未跑赢等权 20 只池（+563.5%、0.99）——因子选股相对等权池无超额，池本身有幸存者偏差
 - [x] 模拟盘执行层 v1（IBKR paper，dry-run + 安全锁）—— run_paper.py
 - [ ] 模拟盘连续记录（每日信号 vs 成交对比，跑满数周再评估）
 
