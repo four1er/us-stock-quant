@@ -60,7 +60,7 @@ python run_backtest.py --strategy momentum --tickers SPY QQQ IWM EFA EEM TLT GLD
 - [ ] 模拟盘连续记录（每日信号 vs 成交对比，跑满数周再评估）
 - [x] 数据管线 v1（多源抓取/清洗校验/Parquet/增量更新/双源交叉校验）—— build_data.py；10 只标的审计全过（results/data_audit.csv），双源原始收盘重叠 2235 天平均差 0.0001%
 - [ ] 数据管线 v2：历史成分股名单（治幸存者偏差）+ SEC EDGAR 财报时点数据
-- [ ] vectorbt 复刻双均线并与自写引擎对账
+- [x] vectorbt 复刻双均线并与自写引擎对账 —— vectorbt_sma.py；同数据同口径下全历史总收益差 0.03pp（1910.69% vs 1910.72%）、交易次数一致（31）。两个已实证的框架预设陷阱：① vectorbt 原生 sharpe_ratio 用 365 天年化，比 252 交易日口径系统性高 sqrt(365/252)=1.203 倍；② MA 窗口广播是逐对配对而非全网格，且多列 from_signals 默认共享资金池 — 参数扫描不能无脑广播
 
 ## 数据管线
 

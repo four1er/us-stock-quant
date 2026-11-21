@@ -3,3 +3,4 @@ numpy>=1.24
 matplotlib>=3.7
 ib_async>=2.0
 pyarrow>=16,<19
+vectorbt>=1.0
