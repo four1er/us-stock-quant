@@ -21,7 +21,9 @@ python run_backtest.py --strategy momentum --tickers SPY QQQ IWM EFA EEM TLT GLD
 
 ## 结构
 
-- `src/data.py` — 从 Nasdaq 公开接口拉取日线收盘价并本地缓存（Yahoo Finance 作备用源）
+- `src/data.py` — 旧版取数（Nasdaq 收盘价缓存，仅拆股复权、约 10 年，新代码请用数据管线）
+- `src/data_pipeline.py` — 数据管线 v1：Yahoo 主源（全历史 OHLCV + 分红复权 adj_close + 分红/拆股事件）→ 清洗校验 → Parquet 落盘 + manifest 溯源，支持增量更新与 Nasdaq 双源交叉校验
+- `build_data.py` — 管线入口：建库/增量更新 + 数据审计报告（results/data_audit.csv）
 - `src/strategies.py` — 策略：输入价格，输出每日目标权重
 - `src/backtest.py` — 向量化回测引擎
 - `src/metrics.py` — 绩效指标
@@ -42,7 +44,8 @@ python run_backtest.py --strategy momentum --tickers SPY QQQ IWM EFA EEM TLT GLD
 ## 已知简化（后续迭代再补）
 
 - 现金收益按 0 计；未处理退市股，标的池有幸存者偏差风险
-- Nasdaq 收盘价做了拆股复权但未做分红复权，长期总收益略低于全收益口径；且接口最多返回约 10 年历史
+- 旧缓存（data.py）只有拆股复权、约 10 年历史；数据管线（data_pipeline.py）已补齐分红复权与全历史（SPY 1993 起、AAPL 1980 起），策略层应改用 `load_adj_close()` 的全收益价格 — 同窗口实测：SPY 买入持有旧口径 +225.2%，全收益口径 +280.8%
+- 财报数据尚未接入（价值/质量因子待做）；历史成分股名单未建，幸存者偏差仍在
 - 日线收盘价成交，未建模滑点与盘中价格
 - 参数（均线长度、动量窗口）有过拟合风险，换参数结果稳定才可信
 
@@ -55,6 +58,21 @@ python run_backtest.py --strategy momentum --tickers SPY QQQ IWM EFA EEM TLT GLD
 - [x] 因子策略回测（按月调仓持有 Top N，对比基准）—— factor_backtest.py；Top 5（2017-11-30–2026-11-19，成本 5 bps）：总收益 +472.9%、夏普 0.95，跑赢 SPY（+170.1%、0.68）但未跑赢等权 20 只池（+563.5%、0.99）——因子选股相对等权池无超额，池本身有幸存者偏差
 - [x] 模拟盘执行层 v1（IBKR paper，dry-run + 安全锁）—— run_paper.py
 - [ ] 模拟盘连续记录（每日信号 vs 成交对比，跑满数周再评估）
+- [x] 数据管线 v1（多源抓取/清洗校验/Parquet/增量更新/双源交叉校验）—— build_data.py；10 只标的审计全过（results/data_audit.csv），双源原始收盘重叠 2235 天平均差 0.0001%
+- [ ] 数据管线 v2：历史成分股名单（治幸存者偏差）+ SEC EDGAR 财报时点数据
+- [ ] vectorbt 复刻双均线并与自写引擎对账
+
+## 数据管线
+
+```bash
+python build_data.py                 # 建库/增量更新（默认 10 只标的）
+python build_data.py --tickers SPY --cross-check   # 附带 Nasdaq 双源校验
+```
+
+数据落在 `data_store/`（不进 git）：raw 原始响应、clean Parquet（OHLCV + adj_close）、
+events 分红/拆股事件、manifest.json 记录每份数据的来源/抓取时间/行数/sha256。
+审计结论示例：SPY 全历史原始收益 +1470% vs 全收益 +2768% — 分红再投资占了近一半，
+用错价格口径，回测结论会系统性跑偏。
 
 ## 模拟盘（IBKR Paper Trading）
 
